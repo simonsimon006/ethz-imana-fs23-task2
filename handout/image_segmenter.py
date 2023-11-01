@@ -11,7 +11,7 @@ from advanced_methods import perform_min_cut
 
 
 class ImageSegmenter:
-    def __init__(self, k_fg=6, k_bg=8, mode='kmeans'):
+    def __init__(self, k_fg=7, k_bg=19, mode='kmeans', avg_sizes=[40, 60, 70, 75, 80, 90, 100]):
         """ Feel free to add any hyper-parameters to the ImageSegmenter.
             
             But note:
@@ -24,7 +24,8 @@ class ImageSegmenter:
         self.k_bg = k_bg
         
         self.mode= mode
-    
+        self.avg_sizes = avg_sizes
+
     def avg_convolve(self, image, n_size):
         # Transform the image into intensity values
         #image = np.linalg.norm(image, axis=-1)
@@ -46,7 +47,7 @@ class ImageSegmenter:
         # here.
         for col in range(img_fft.shape[-1]):
             img_fft[:, :, col] *= filter_fft
-        res = np.fft.irfft2(img_fft, axes=(0,1)).real
+        res = np.fft.irfft2(img_fft, axes=(0,1), s=image.shape[:2]).real
         '''print(res.shape)
         print(res.max())
         from matplotlib.pyplot import imshow, show
@@ -60,16 +61,15 @@ class ImageSegmenter:
         
         img = sample_dd['img']
         H, W, C = img.shape
-        avgs = [8, 12 ,20, 40, 60, 80, 90, 100]
         # Make a container for all the averages
-        ng_ints = np.zeros((H*W, len(avgs)*3))
+        ng_ints = np.zeros((H*W, len(self.avg_sizes)*3))
 
-        for i, size in enumerate(avgs):
+        for i, size in enumerate(self.avg_sizes):
             reshaped = np.reshape(self.avg_convolve(img, size), (H*W, 3))
             ng_ints[:, i:i+3] = reshaped
         feat = img.reshape((H*W, C))
         
-        temp_feat = np.zeros((feat.shape[0], feat.shape[1]+len(avgs)*3))
+        temp_feat = np.zeros((feat.shape[0], feat.shape[1]+len(self.avg_sizes)*3))
         temp_feat[:,:feat.shape[1]] = feat
         temp_feat[:, feat.shape[1]:] = ng_ints
         feat = temp_feat

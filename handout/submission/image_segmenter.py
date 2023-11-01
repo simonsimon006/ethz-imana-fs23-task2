@@ -46,7 +46,7 @@ class ImageSegmenter:
         # here.
         for col in range(img_fft.shape[-1]):
             img_fft[:, :, col] *= filter_fft
-        res = np.fft.irfft2(img_fft, axes=(0,1)).real
+        res = np.fft.irfft2(img_fft, axes=(0,1), s=image.shape[:2]).real
         '''print(res.shape)
         print(res.max())
         from matplotlib.pyplot import imshow, show
@@ -60,7 +60,7 @@ class ImageSegmenter:
         
         img = sample_dd['img']
         H, W, C = img.shape
-        avgs = [8, 12 ,20, 40, 60, 80, 90, 100]
+        avgs = [40, 60, 80, 90, 100]
         # Make a container for all the averages
         ng_ints = np.zeros((H*W, len(avgs)*3))
 
