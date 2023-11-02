@@ -1,5 +1,6 @@
 import numpy as np
 
+# NOT USED
 
 def extract_patches(img, p):
     """

@@ -11,7 +11,7 @@ from advanced_methods import perform_min_cut
 
 
 class ImageSegmenter:
-    def __init__(self, k_fg=7, k_bg=19, mode='kmeans', avg_sizes=[40, 60, 70, 75, 80, 90, 100]):
+    def __init__(self, k_fg=6, k_bg=12, mode='kmeans', avg_sizes=[40, 60, 70, 75, 80, 90, 100]):
         """ Feel free to add any hyper-parameters to the ImageSegmenter.
             
             But note:
@@ -24,15 +24,11 @@ class ImageSegmenter:
         self.k_bg = k_bg
         
         self.mode= mode
+
+        # The set of different neighbourhood sizes to average.
         self.avg_sizes = avg_sizes
 
     def avg_convolve(self, image, n_size):
-        # Transform the image into intensity values
-        #image = np.linalg.norm(image, axis=-1)
-
-        #image /= image.max()
-        #image *= 255
-        
         # Define an averaging kernel over an n_sizeXn_size window. The kernel
         # must have the same size as the image so I padded it with zeros to get
         # the filter.
@@ -43,17 +39,13 @@ class ImageSegmenter:
         # convolution step
         img_fft = np.fft.rfft2(image, axes=(0,1))
         filter_fft = np.fft.rfft2(filter)
-        # Somtimes the result has a small imaginary part left. We discard it 
-        # here.
         for col in range(img_fft.shape[-1]):
             img_fft[:, :, col] *= filter_fft
+        
+        # Somtimes the result has a small imaginary part left. We discard it 
+        # here.
         res = np.fft.irfft2(img_fft, axes=(0,1), s=image.shape[:2]).real
-        '''print(res.shape)
-        print(res.max())
-        from matplotlib.pyplot import imshow, show
-        imshow(res, cmap="Greys")
-        show()
-        quit()'''
+
         return res
 
     def extract_features_(self, sample_dd):
@@ -64,11 +56,13 @@ class ImageSegmenter:
         # Make a container for all the averages
         ng_ints = np.zeros((H*W, len(self.avg_sizes)*3))
 
+        # For every filter size do one average and append it to our vector.
         for i, size in enumerate(self.avg_sizes):
             reshaped = np.reshape(self.avg_convolve(img, size), (H*W, 3))
             ng_ints[:, i:i+3] = reshaped
         feat = img.reshape((H*W, C))
         
+        # Fuse the reshaped image and its respective neighbourhood averages.
         temp_feat = np.zeros((feat.shape[0], feat.shape[1]+len(self.avg_sizes)*3))
         temp_feat[:,:feat.shape[1]] = feat
         temp_feat[:, feat.shape[1]:] = ng_ints
